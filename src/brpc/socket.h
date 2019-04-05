@@ -198,6 +198,7 @@ public:
     Socket(Forbidden);
     ~Socket();
 
+    // 为了防止多线程同时写一个fd，rpc内部控制内部只有一个线程在写这个fd
     // Write `msg' into this Socket and clear it. The `msg' should be an
     // intact request or response. To prevent messages from interleaving
     // with other messages, the internal file descriptor is written by one

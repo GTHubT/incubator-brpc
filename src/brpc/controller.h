@@ -622,6 +622,7 @@ private:
 
     void SubmitSpan();
 
+    // 记录当前的rpc起始时间
     void OnRPCBegin(int64_t begin_time_us) {
         _begin_time_us = begin_time_us;
         // make latency_us() return 0 when RPC is not over
@@ -674,6 +675,8 @@ private:
     // after CallMethod.
     int _max_retry;
     const RetryPolicy* _retry_policy;
+    // 一个RPC内部使用controller的CallID来唯一标识，这个ID伴随整个RPC的生命周期
+    // 包括retry
     // Synchronization object for one RPC call. It remains unchanged even 
     // when retry happens. Synchronous RPC will wait on this id.
     CallId _correlation_id;

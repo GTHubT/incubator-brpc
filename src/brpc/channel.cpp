@@ -363,6 +363,8 @@ static void HandleBackupRequest(void* arg) {
     bthread_id_error(correlation_id, EBACKUPREQUEST);
 }
 
+// 用户通过protoc生产proto的idl代码，client端调用service stub，service stub内部会将
+// 用户的请求转发到channel的CallMethod中。
 void Channel::CallMethod(const google::protobuf::MethodDescriptor* method,
                          google::protobuf::RpcController* controller_base,
                          const google::protobuf::Message* request,
