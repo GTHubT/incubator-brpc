@@ -208,6 +208,8 @@ void SocketMap::PrintSocketMap(std::ostream& os, void* arg) {
     static_cast<SocketMap*>(arg)->Print(os);
 }
 
+// socketMap是一个全局的map，因为其初始化使用pthread_once
+// map操作加锁
 int SocketMap::Insert(const SocketMapKey& key, SocketId* id,
                       const std::shared_ptr<SocketSSLContext>& ssl_ctx) {
     std::unique_lock<butil::Mutex> mu(_mutex);

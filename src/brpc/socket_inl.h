@@ -118,6 +118,8 @@ inline int Socket::Dereference() {
     return -1;
 }
 
+// brpc中使用bthread_id作为资源唯一标识
+// 每个socketid对应一个socket，socket_id
 inline int Socket::Address(SocketId id, SocketUniquePtr* ptr) {
     const butil::ResourceId<Socket> slot = SlotOfSocketId(id);
     Socket* const m = address_resource(slot);
