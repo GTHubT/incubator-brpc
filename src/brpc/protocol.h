@@ -61,6 +61,14 @@ DECLARE_bool(log_error_text);
 // Step2: Implement callbacks of struct `Protocol' in policy/ directory.
 // Step3: Register the protocol in global.cpp using `RegisterProtocol'
 
+// 传输协议，protocol需要在client与server两端约定传输
+// 传输协议就是一条网络包接收到之后该如何从这条消息中解析出
+// client的调用方法以及这条消息的数据大小等。
+// protobuf是一种数据格式，是client与server之间显示定义
+// 的一种数据解析格式，这个是用户定义的，而传输协议则是用户
+// 不可见的。
+// 一个protocol需要提供解析数据包的方法，同时也需要提供数据序列化与反序列的
+// 处理函数
 struct Protocol {
     // [Required by both client and server]
     // The callback to cut a message from `source'.

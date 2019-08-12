@@ -89,6 +89,8 @@ static void SerializeRpcHeaderAndMeta(
     }
 }
 
+// baidu传输协议提供的网络数据处理函数
+// 具体处理方式与传输协议息息相关
 ParseResult ParseRpcMessage(butil::IOBuf* source, Socket* socket,
                             bool /*read_eof*/, const void*) {
     char header_buf[12];
@@ -299,6 +301,7 @@ void EndRunningCallMethodInPool(
     return EndRunningUserCodeInPool(CallMethodInBackupThread, args);
 };
 
+// baidu传输协议数据包处理函数
 void ProcessRpcRequest(InputMessageBase* msg_base) {
     const int64_t start_parse_us = butil::cpuwide_time_us();
     DestroyingPtr<MostCommonMessage> msg(static_cast<MostCommonMessage*>(msg_base));

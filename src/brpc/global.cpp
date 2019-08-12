@@ -374,7 +374,12 @@ static void GlobalInitializeOrDieImpl() {
         exit(1);
     }
 
-    // Protocols
+    // 注册rpc传输协议，brpc默认使用的是baidu_std协议
+    // ParseRpcMessage是用户处理数据包的处理函数
+    // SerializeRequestDefault是序列化数据包
+    // PackRpcRequest打包数据
+    // ProcessRpcRequest处理收到的rpc数据包
+    // ProcessRpcResponse处理response
     Protocol baidu_protocol = { ParseRpcMessage,
                                 SerializeRequestDefault, PackRpcRequest,
                                 ProcessRpcRequest, ProcessRpcResponse,

@@ -600,6 +600,8 @@ int Server::InitializeOnce() {
     if (_status != UNINITIALIZED) {
         return 0;
     }
+
+    // 初始化全局资源
     GlobalInitializeOrDie();
     
     if (_status != UNINITIALIZED) {
@@ -1154,6 +1156,14 @@ int Server::Join() {
     return 0;
 }
 
+// [server] AddServiceInternal是rpc service添加的服务的内部实现函数
+// service由多个method构成
+// 每个service会通过protoc生成对应的proto service，其中包含一个内置函数
+// GetDescriptor()，这个函数返回ServiceDescriptor，这个ServiceDescriptor
+// 是对一个service的完整描述，包括当前service提供多少method，以及对应的name信息
+// 每个method也都有自己的MethodDescriptor，这个MethodDescriptor是对每一个
+// method的完整描述。
+// ServiceDescriptor提供方法能够通过索引或者名字查找到对应的method。
 int Server::AddServiceInternal(google::protobuf::Service* service,
                                bool is_builtin_service,
                                const ServiceOptions& svc_opt) {
@@ -1161,6 +1171,8 @@ int Server::AddServiceInternal(google::protobuf::Service* service,
         LOG(ERROR) << "Parameter[service] is NULL!";
         return -1;
     }
+
+    // 对service做合法性检查，一个service的method方法不应该为0
     const google::protobuf::ServiceDescriptor* sd = service->GetDescriptor();
     if (sd->method_count() == 0) {
         LOG(ERROR) << "service=" << sd->full_name()
@@ -1168,6 +1180,7 @@ int Server::AddServiceInternal(google::protobuf::Service* service,
         return -1;
     }
     
+    // 初始化全局线程池以及网络通信框架
     if (InitializeOnce() != 0) {
         LOG(ERROR) << "Fail to initialize Server[" << version() << ']';
         return -1;

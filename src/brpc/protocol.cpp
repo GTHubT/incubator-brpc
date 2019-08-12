@@ -64,6 +64,7 @@ inline ProtocolEntry* get_protocol_map() {
 }
 static pthread_mutex_t s_protocol_map_mutex = PTHREAD_MUTEX_INITIALIZER;
 
+// 注册协议
 int RegisterProtocol(ProtocolType type, const Protocol& protocol) {
     const size_t index = type;
     if (index >= MAX_PROTOCOL_SIZE) {

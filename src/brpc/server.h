@@ -398,6 +398,11 @@ public:
     // function may block indefinitely.
     void RunUntilAskedToQuit();
 
+    // 在启动server之前需要先添加服务
+    // 添加服务在内部做的就是实现方法映射
+    // 当接收到client的rpc时，RPC内部需要
+    // 根据client传过来的协议解析出当前rpc的目标服务，这个解析过程就是通过方法映射
+    // 获取的。
     // Add a service. Arguments are explained in ServiceOptions above.
     // NOTE: Adding a service while server is running is forbidden.
     // Returns 0 on success, -1 otherwise.
