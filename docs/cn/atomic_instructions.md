@@ -86,7 +86,7 @@ if (ready.load(std::memory_order_acquire)) {
 
 线程2中的acquire和线程1的release配对，确保线程2在看到ready==true时能看到线程1 release之前所有的访存操作。
 
-注意，memory fence不等于可见性，即使线程2恰好在线程1在把ready设置为true后读取了ready也不意味着它能看到true，因为同步cache是有延时的。memory fence保证的是可见性的顺序：“假如我看到了a的最新值，那么我一定也得看到b的最新值”。
+==注意，memory fence不等于可见性，即使线程2恰好在线程1在把ready设置为true后读取了ready也不意味着它能看到true，因为同步cache是有延时的。memory fence保证的是可见性的顺序：“假如我看到了a的最新值，那么我一定也得看到b的最新值”。==
 
 一个相关问题是：如何知道看到的值是新还是旧？一般分两种情况：
 
