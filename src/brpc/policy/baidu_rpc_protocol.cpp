@@ -411,6 +411,11 @@ void ProcessRpcRequest(InputMessageBase* msg_base) {
 
         // NOTE(gejun): jprotobuf sends service names without packages. So the
         // name should be changed to full when it's not.
+        // 具体的传输协议在brpc的文档里有明确介绍
+        // 这里从每个request的数据包中解析出rpc meta信息
+        // 这个rpc meta是rpc自身的meta，对用户不可见
+        // 在meta中找到当前request请求的服务名称，然后根据服务名称
+        // 找到对应的服务，然后在对应的服务中找到对应的method信息
         butil::StringPiece svc_name(request_meta.service_name());
         if (svc_name.find('.') == butil::StringPiece::npos) {
             const Server::ServiceProperty* sp =
@@ -435,6 +440,8 @@ void ProcessRpcRequest(InputMessageBase* msg_base) {
             BadMethodRequest breq;
             BadMethodResponse bres;
             breq.set_service_name(request_meta.service_name());
+            // 找到对应的method之后就可以调用其CallMethod，这个函数会将
+            // request转发给业务
             mp->service->CallMethod(mp->method, cntl.get(), &breq, &bres, NULL);
             break;
         }
@@ -455,6 +462,9 @@ void ProcessRpcRequest(InputMessageBase* msg_base) {
         if (span) {
             span->ResetServerSpanName(method->full_name());
         }
+
+        // 这里表明当前request携带附件过来了
+        // 附件是不在rpc的序列化范围之内的，这是一种优化，防止序列化带来的负担过重
         const int reqsize = static_cast<int>(msg->payload.size());
         butil::IOBuf req_buf;
         butil::IOBuf* req_buf_ptr = &msg->payload;
