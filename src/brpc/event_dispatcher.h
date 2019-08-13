@@ -25,6 +25,14 @@
 
 namespace brpc {
 
+// brpc的网络框架
+// brpc使用epoll+ET网络模型，基于其实现网络数据收发
+// ET与LT两种模式主要差别在于编程模型上，如果我们使用主线程唤醒的方式读取数据
+// 所有数据读取操作在主线程完成，这种编程模式下ET和LT效率差不多，因为ET与LT的
+// 差别就在于ET下如果一个fd上的数据没有读完，epoll不会再将这个fd唤醒通知用户
+// 而LT模式下则是只要这个fd上有未读取完的数据就会一直唤醒用户进行读取。
+// 所以如果在多线程模型中，用户唤醒之后，将fd分发到其他线程中，不占用主线程资源
+// 这种编程模式下ET的效率会比LT高，因为主线程不需要被频繁唤醒
 // Dispatch edge-triggered events of file descriptors to consumers
 // running in separate bthreads.
 class EventDispatcher {

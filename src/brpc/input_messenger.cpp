@@ -163,6 +163,7 @@ static void QueueMessage(InputMessageBase* to_run_msg,
     }
 }
 
+// OnNewMessages是所有的连接socket在有事件触发时都会调用这个函数进行消息处理
 void InputMessenger::OnNewMessages(Socket* m) {
     // Notes:
     // - If the socket has only one message, the message will be parsed and

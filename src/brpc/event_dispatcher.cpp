@@ -46,6 +46,7 @@ EventDispatcher::EventDispatcher()
     , _consumer_thread_attr(BTHREAD_ATTR_NORMAL)
 {
 #if defined(OS_LINUX)
+    // 在linux系统下使用其epoll网络通信模型
     _epfd = epoll_create(1024 * 1024);
     if (_epfd < 0) {
         PLOG(FATAL) << "Fail to create epoll";
@@ -62,6 +63,7 @@ EventDispatcher::EventDispatcher()
 #endif
     CHECK_EQ(0, butil::make_close_on_exec(_epfd));
 
+    // 创建管道
     _wakeup_fds[0] = -1;
     _wakeup_fds[1] = -1;
     if (pipe(_wakeup_fds) != 0) {
@@ -83,6 +85,9 @@ EventDispatcher::~EventDispatcher() {
     }
 }
 
+// 创建事件分发线程
+// 使用bthread进行时间分发，bthread与业务处理线程共用相同的worker线程池
+// 这种方式会不会造成事件分发线程处于得不到调度的状态？
 int EventDispatcher::Start(const bthread_attr_t* consumer_thread_attr) {
     if (_epfd < 0) {
 #if defined(OS_LINUX)
@@ -272,11 +277,30 @@ void* EventDispatcher::RunThis(void* arg) {
     return NULL;
 }
 
+// 事件分发线程处理函数
+// 常规的使用epoll机制
+// epoll_wait->
+/*
+  typedef union epoll_data {
+               void    *ptr;
+               int      fd;
+               uint32_t u32;
+               uint64_t u64;
+           } epoll_data_t;
+
+           struct epoll_event {
+               uint32_t     events;    // Epoll events
+               epoll_data_t data;      // User data variable
+           };
+*/
 void EventDispatcher::Run() {
     while (!_stop) {
 #if defined(OS_LINUX)
         epoll_event e[32];
 #ifdef BRPC_ADDITIONAL_EPOLL
+        // epoll wait等待事件，返回值是有新事件的fd数量，fd会被放在
+        // epoll_event中，epoll会等待一定的时间，如果最后的参数大于0
+        // 则等待相应的微妙数就返回。否则一直等待
         // Performance downgrades in examples.
         int n = epoll_wait(_epfd, e, ARRAY_SIZE(e), 0);
         if (n == 0) {
@@ -307,13 +331,21 @@ void EventDispatcher::Run() {
 #endif
             break;
         }
+
+        // n为当前epoll获取的新事件个数，每次epoll wait唤醒之后都要遍历这些事件
+        // epoll wait唤醒时，这些事件从内核拷贝到用户态，这里有一次拷贝过程?
+        // epoll内部维护了哪些数据结构，红黑树？
         for (int i = 0; i < n; ++i) {
 #if defined(OS_LINUX)
+            // 判断事件类型，根据事件类型进行分发
             if (e[i].events & (EPOLLIN | EPOLLERR | EPOLLHUP)
 #ifdef BRPC_SOCKET_HAS_EOF
                 || (e[i].events & has_epollrdhup)
 #endif
                 ) {
+                // 处理输入事件
+                // epoll_data的data，u64存放的是当前socket的id信息
+                // 这个信息是在事件通过epoll_ctl加入epoll的时候添加进去的
                 // We don't care about the return value.
                 Socket::StartInputEvent(e[i].data.u64, e[i].events,
                                         _consumer_thread_attr);
@@ -329,6 +361,7 @@ void EventDispatcher::Run() {
         for (int i = 0; i < n; ++i) {
 #if defined(OS_LINUX)
             if (e[i].events & (EPOLLOUT | EPOLLERR | EPOLLHUP)) {
+                // 处理输出事件
                 // We don't care about the return value.
                 Socket::HandleEpollOut(e[i].data.u64);
             }

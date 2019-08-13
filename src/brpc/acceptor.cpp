@@ -78,6 +78,9 @@ int Acceptor::StartAccept(int listened_fd, int idle_timeout_sec,
     SocketOptions options;
     options.fd = listened_fd;
     options.user = this;
+    // on_edge_triggered_events会在epoll事件触发的时候使用其
+    // 注册的事件处理函数处理新来的事件,OnNewConnections是accept fd
+    // 的事件处理函数。
     options.on_edge_triggered_events = OnNewConnections;
     if (Socket::Create(options, &_acception_id) != 0) {
         // Close-idle-socket thread will be stopped inside destructor
@@ -237,10 +240,15 @@ void Acceptor::ListConnections(std::vector<SocketId>* conn_list) {
     return ListConnections(conn_list, std::numeric_limits<size_t>::max());
 }
 
+// 新的连接进来的时候会通过OnNewConnectionsUntilEAGAIN接受
+// 网络编程中accept函数其实并没有参与真正的网络通信，从这里可以看出
+// epoll wait唤醒之后，说明事件已经建立好了，这时候调用accept，这里的accept
+// 其实只是从本地的tcp/ip协议栈中将建立好的连接取出来罢了。
 void Acceptor::OnNewConnectionsUntilEAGAIN(Socket* acception) {
     while (1) {
         struct sockaddr in_addr;
         socklen_t in_len = sizeof(in_addr);
+        // in_fd是新建连接的fd
         butil::fd_guard in_fd(accept(acception->fd(), &in_addr, &in_len));
         if (in_fd < 0) {
             // no EINTR because listened fd is non-blocking.
@@ -264,12 +272,15 @@ void Acceptor::OnNewConnectionsUntilEAGAIN(Socket* acception) {
             return;
         }
         
+        // 为新的连接创建一个brpc Socket对象
         SocketId socket_id;
         SocketOptions options;
         options.keytable_pool = am->_keytable_pool;
         options.fd = in_fd;
         options.remote_side = butil::EndPoint(*(sockaddr_in*)&in_addr);
         options.user = acception->user();
+        // 在新建的socket上如果有事件发送过来，都会调用
+        // OnNewMessages来处理这个事件
         options.on_edge_triggered_events = InputMessenger::OnNewMessages;
         options.initial_ssl_ctx = am->_ssl_ctx;
         if (Socket::Create(options, &socket_id) != 0) {

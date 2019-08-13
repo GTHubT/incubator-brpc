@@ -2010,6 +2010,7 @@ AuthContext* Socket::mutable_auth_context() {
     return _auth_context;
 }
 
+// 事件分发线程会将事件芬达到其他worker线程处理
 int Socket::StartInputEvent(SocketId id, uint32_t events,
                             const bthread_attr_t& thread_attr) {
     SocketUniquePtr s;
@@ -2048,6 +2049,8 @@ int Socket::StartInputEvent(SocketId id, uint32_t events,
 
         bthread_attr_t attr = thread_attr;
         attr.keytable_pool = p->_keytable_pool;
+        // 对于epoll发过来的事件会重新起一个bthread专门处理，处理函数为
+        // ProcessEvent，如果bthread启动失败就在当前事件分发线程中处理
         if (bthread_start_urgent(&tid, &attr, ProcessEvent, p) != 0) {
             LOG(FATAL) << "Fail to start ProcessEvent";
             ProcessEvent(p);
