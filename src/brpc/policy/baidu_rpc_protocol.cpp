@@ -302,6 +302,9 @@ void EndRunningCallMethodInPool(
 };
 
 // baidu传输协议数据包处理函数
+// ProcessRpcRequest是传输协议注册的时候注册的数据包处理函数
+// 只要网络中收到数据包，从epoll读取完毕之后都会调用对应协议的
+// 数据包处理函数进行数据包解析
 void ProcessRpcRequest(InputMessageBase* msg_base) {
     const int64_t start_parse_us = butil::cpuwide_time_us();
     DestroyingPtr<MostCommonMessage> msg(static_cast<MostCommonMessage*>(msg_base));

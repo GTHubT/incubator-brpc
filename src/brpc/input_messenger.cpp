@@ -129,6 +129,9 @@ ParseResult InputMessenger::CutInputMessage(
 }
 
 void* ProcessInputMessage(void* void_arg) {
+    // msg->_process, _process函数是在rpc传输协议注册的时候一起注册进去的
+    // 这在server.cpp中server start函数中注册协议的时候统一注册进去了
+    // 这里以baidu_std的传输协议来看
     InputMessageBase* msg = static_cast<InputMessageBase*>(void_arg);
     msg->_process(msg);
     return NULL;
@@ -184,6 +187,7 @@ void InputMessenger::OnNewMessages(Socket* m) {
     // OK in most cases.
     std::unique_ptr<InputMessageBase, RunLastMessage> last_msg;
     bool read_eof = false;
+    // 读取当前socket的数据，解析
     while (!read_eof) {
         const int64_t received_us = butil::cpuwide_time_us();
         const int64_t base_realtime = butil::gettimeofday_us() - received_us;
